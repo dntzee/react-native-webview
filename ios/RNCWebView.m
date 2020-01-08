@@ -51,6 +51,7 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 @property (nonatomic, copy) WKWebView *webView;
+@property (nonatomic, copy) UIProgressView *progressBar;
 @end
 
 @implementation RNCWebView
@@ -84,6 +85,14 @@ static NSDictionary* customCertificatesForHost;
     _savedKeyboardDisplayRequiresUserAction = YES;
     _savedStatusBarStyle = RCTSharedApplication().statusBarStyle;
     _savedStatusBarHidden = RCTSharedApplication().statusBarHidden;
+      
+    _progressBar = [[UIProgressView alloc] initWithProgressViewStyle: UIProgressViewStyleBar];
+      _progressBar.progressTintColor = [UIColor greenColor];
+      _progressBar.frame = CGRectMake(0, 0, UIScreen.mainScreen.bounds.size.width, 2);
+      [self addSubview:_progressBar];
+      [_progressBar setProgress:0.6];
+      [self bringSubviewToFront:_progressBar];
+      
 
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
     _savedContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
@@ -115,6 +124,7 @@ static NSDictionary* customCertificatesForHost;
                                                  object:nil];
   }
 
+    
   return self;
 }
 
@@ -162,8 +172,7 @@ static NSDictionary* customCertificatesForHost;
     wkWebViewConfig.userContentController = [WKUserContentController new];
 
     // Shim the HTML5 history API:
-    [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
-                                                              name:HistoryShimName];
+    [wkWebViewConfig.userContentController addScriptMessageHandler:self name:HistoryShimName];
     NSString *source = [NSString stringWithFormat:
       @"(function(history) {\n"
       "  function notify(type) {\n"
@@ -188,8 +197,7 @@ static NSDictionary* customCertificatesForHost;
     [wkWebViewConfig.userContentController addUserScript:script];
 
     if (_messagingEnabled) {
-      [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
-                                                                name:MessageHandlerName];
+      [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
 
       NSString *source = [NSString stringWithFormat:
         @"window.%@ = {"
@@ -387,8 +395,16 @@ static NSDictionary* customCertificatesForHost;
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
     if ([keyPath isEqual:@"estimatedProgress"] && object == self.webView) {
         if(_onLoadingProgress){
-             NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-            [event addEntriesFromDictionary:@{@"progress":[NSNumber numberWithDouble:self.webView.estimatedProgress]}];
+            double estimatedProgress = self.webView.estimatedProgress;
+            if (estimatedProgress >= 1) {
+                estimatedProgress = 0;
+            }
+            [_progressBar setProgress: estimatedProgress];
+            [self bringSubviewToFront:_progressBar];
+            
+            NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+            NSNumber *progress = [NSNumber numberWithDouble:self.webView.estimatedProgress];
+            [event addEntriesFromDictionary:@{@"progress": progress}];
             _onLoadingProgress(event);
         }
     }else{
@@ -1079,20 +1095,3 @@ static NSDictionary* customCertificatesForHost;
 }
 
 @end
-
-@implementation RNCWeakScriptMessageDelegate
-
-- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate {
-    self = [super init];
-    if (self) {
-        _scriptDelegate = scriptDelegate;
-    }
-    return self;
-}
-
-- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
-    [self.scriptDelegate userContentController:userContentController didReceiveScriptMessage:message];
-}
-
-@end
-
