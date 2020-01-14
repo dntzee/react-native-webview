@@ -51,7 +51,7 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 @property (nonatomic, copy) WKWebView *webView;
-@property (nonatomic, copy) UIProgressView *progressBar;
+//@property (nonatomic, copy) UIProgressView *progressBar;
 @end
 
 @implementation RNCWebView
@@ -86,12 +86,12 @@ static NSDictionary* customCertificatesForHost;
     _savedStatusBarStyle = RCTSharedApplication().statusBarStyle;
     _savedStatusBarHidden = RCTSharedApplication().statusBarHidden;
       
-    _progressBar = [[UIProgressView alloc] initWithProgressViewStyle: UIProgressViewStyleBar];
-      _progressBar.progressTintColor = [UIColor greenColor];
-      _progressBar.frame = CGRectMake(0, 0, UIScreen.mainScreen.bounds.size.width, 2);
-      [self addSubview:_progressBar];
-      [_progressBar setProgress:0.6];
-      [self bringSubviewToFront:_progressBar];
+    // _progressBar = [[UIProgressView alloc] initWithProgressViewStyle: UIProgressViewStyleBar];
+    //   _progressBar.progressTintColor = [UIColor greenColor];
+    //   _progressBar.frame = CGRectMake(0, 0, UIScreen.mainScreen.bounds.size.width, 2);
+    //   [self addSubview:_progressBar];
+    //   [_progressBar setProgress:0.6];
+    //   [self bringSubviewToFront:_progressBar];
       
 
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
@@ -399,8 +399,8 @@ static NSDictionary* customCertificatesForHost;
             if (estimatedProgress >= 1) {
                 estimatedProgress = 0;
             }
-            [_progressBar setProgress: estimatedProgress];
-            [self bringSubviewToFront:_progressBar];
+            // [_progressBar setProgress: estimatedProgress];
+            // [self bringSubviewToFront:_progressBar];
             
             NSMutableDictionary<NSString *, id> *event = [self baseEvent];
             NSNumber *progress = [NSNumber numberWithDouble:self.webView.estimatedProgress];
